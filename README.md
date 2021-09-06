@@ -13,9 +13,9 @@
 <br/>conf： 程序配置对象
 <br/>protocol： 程序监听的协议
 <br/>pkg： 业务领域包
-         <br/> -host 
-         <br/>（&nbsp；）-model：业务需要的数据模型
-         <br/>（&nbsp；）-interface： 业务接口（领域方法）
-         <br/>（&nbsp；）-impl： 业务具体实现
-         <br/>（&nbsp；）...
+         <br/>-host 
+         <br/>-model：业务需要的数据模型
+         <br/>-interface： 业务接口（领域方法）
+         <br/>-impl： 业务具体实现
+         <br/>...
 <br/>main 程序入口文件    
