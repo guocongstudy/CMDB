@@ -1,0 +1,17 @@
+[app]
+name = "demo"
+host = "0.0.0.0"
+port ="8050"
+key = "this is your app key"
+
+[mysql]
+host ="127.0.0.1"
+prot="3306"
+username="root"
+password="password"
+database ="test"
+
+[log]
+level ="debug"
+path="logs"
+to ="stdout"

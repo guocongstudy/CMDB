@@ -17,7 +17,7 @@ type Host struct {
 }
 
 type Base struct {
-	Id           string `json:id`              //全局唯一Id
+	Id           string `json:"id"`            //全局唯一Id
 	SyncAt       int64  `json:"sync_at"`       //同步时间
 	Vendor       Vendor `json:"vendor"`        //厂商
 	Region       string `json:"region"`        //地域
@@ -44,17 +44,17 @@ type Resource struct {
 }
 
 type Describe struct {
-	ResourceId string `json:"resource_id"`
-	CPU int `json:"cpu"`
-	Memory int `json:"memory"`
-	GPUAmount int `json:"gpu_amount"`
-	GPUSpec string `json:"gpu_spec"`
-	OSType string `json:"os_type"`
-	OSName string `json:"os_name"`
-	SerialNumber string `json:"serial_number"`
-	ImageID string `json:"image_id"`
-	InternetMaxBandwidthOut int `json:"internet_max_bandwidth_out"`
-	InternetMaxBandwidthIn int `json:"internet_max_bandwidth_in"`
-	KeyPairName string `json:"key_pair_name"`
-	SecurityGroups string `json:"security_groups"`
+	ResourceId              string `json:"resource_id"`                //关联Resource
+	CPU                     int    `json:"cpu"`                        //核数
+	Memory                  int    `json:"memory"`                     //内存
+	GPUAmount               int    `json:"gpu_amount"`                 //GPU数量
+	GPUSpec                 string `json:"gpu_spec"`                   //GPU类型
+	OSType                  string `json:"os_type"`                    //操作系统类型
+	OSName                  string `json:"os_name"`                    //操作系统名称
+	SerialNumber            string `json:"serial_number"`              //序列号
+	ImageID                 string `json:"image_id"`                   //镜像ID
+	InternetMaxBandwidthOut int    `json:"internet_max_bandwidth_out"` //公网出宽带
+	InternetMaxBandwidthIn  int    `json:"internet_max_bandwidth_in"`  //公网入宽带
+	KeyPairName             string `json:"key_pair_name"`              //秘钥对名称
+	SecurityGroups          string `json:"security_groups"`            //安全组 采用
 }
