@@ -23,10 +23,12 @@ type QueryHostRequest struct {
 	PageNumber uint64 `json:"page_number,omitempty"`
 }
 
-type HostSet struct {
-	Items []*Host `json:"items"`
-	Total int     `json:"total"`
+//pageNumber 第一页 第二页。。。
+func (req *QueryHostRequest) Offset() int64 {
+	return int64(req.PageSize) *int64(req.PageNumber-1)  //从0开始
 }
+
+
 
 type DescribeHostRequest struct {
 	//利用主机Id

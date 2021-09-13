@@ -1,5 +1,11 @@
 package host
 
+import (
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
+)
+
 const (
 	ProvateIDC Vendor = iota
 	Tencent
@@ -16,6 +22,27 @@ type Host struct {
 	*Describe
 }
 
+func (h *Host) GenHash() error{
+	hash :=sha1.New()
+
+	b,err :=json.Marshal(h.Resource)
+	if err !=nil{
+		return err
+	}
+	hash.Write(b)
+	h.ResourceHash=fmt.Sprintf("%x",hash.Sum(nil))
+
+	b,err =json.Marshal(h.Describe)
+	if err !=nil{
+		return err
+	}
+	hash.Reset()
+	hash.Write(b)
+	h.DescribeHash =fmt.Sprintf("%x",hash.Sum(nil))
+	return nil
+
+}
+
 type Base struct {
 	Id           string `json:"id"`            //全局唯一Id
 	SyncAt       int64  `json:"sync_at"`       //同步时间
@@ -24,7 +51,7 @@ type Base struct {
 	Zone         string `json:"zone"`          //区域
 	CreateAt     int64  `json:"create_at"`     //创建时间
 	InstanceId   string `json:"instance_id"`   //实例ID
-	ResourceId   string `json:"resource_id"`   //基础数据Hash
+	ResourceHash   string `json:"resource_id"`   //基础数据Hash
 	DescribeHash string `json:"describe_hash"` //描述数据Hash
 }
 
@@ -57,4 +84,17 @@ type Describe struct {
 	InternetMaxBandwidthIn  int    `json:"internet_max_bandwidth_in"`  //公网入宽带
 	KeyPairName             string `json:"key_pair_name"`              //秘钥对名称
 	SecurityGroups          string `json:"security_groups"`            //安全组 采用
+}
+
+//构造HostSet函数
+func NewHostSet()*HostSet{
+	return &HostSet{
+		Items: []*Host{},
+	}
+}
+
+
+type HostSet struct {
+	Items []*Host `json:"items"`
+	Total int     `json:"total"`
 }

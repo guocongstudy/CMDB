@@ -5,6 +5,18 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+var (
+	global *Config
+)
+
+//C 全局配置对象
+func C() *Config {
+	if global == nil {
+		panic("Load Config first")
+	}
+	return global
+}
+
 //LoadConfigFormToml 从toml中漏加配置文件，并初始化全局对象
 func LoadConfigFormToml(filePath string) error {
 	cfg := newConfig()
@@ -12,7 +24,7 @@ func LoadConfigFormToml(filePath string) error {
 		return err
 	}
 	//加载全局配组单例
-	//global =cfg
+	global = cfg
 	return nil
 }
 
@@ -23,6 +35,6 @@ func LoadConfigFormEnv() error {
 		return err
 	}
 	//加載全局配置單例
-	//global =cfg
+	global = cfg
 	return nil
 }

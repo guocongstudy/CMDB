@@ -9,9 +9,10 @@ host ="127.0.0.1"
 prot="3306"
 username="root"
 password="password"
-database ="test"
+database ="go_couse"
 
 [log]
 level ="debug"
 path="logs"
+format = "text"
 to ="stdout"

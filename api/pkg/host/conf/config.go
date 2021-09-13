@@ -1,10 +1,18 @@
 package conf
 
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"sync"
+	"time"
+)
+
 func newConfig() *Config {
 	return &Config{
-		App: newDefaultAPP(),
-		Log: newDefaultLog(),
-		MySQL:newDefaultMySQL(),
+		App:   newDefaultAPP(),
+		Log:   newDefaultLog(),
+		MySQL: newDefaultMySQL(),
 	}
 }
 
@@ -57,15 +65,55 @@ type mySQL struct {
 	MaxIdleConn int    `toml:"max_idle_conn" env:"D_MYSQL_MAX_IDLE_CONN"`
 	MaxLifeTime int    `toml:"max_life_time" env:"D_MYSQL_MAX_LIFE_TIME"`
 	MaxIdleTime int    `toml:"max_life_time" env:"D_MYSQL_MAX_idle_TIME"`
+
+	lock sync.Mutex
 }
 
+var (
+	db *sql.DB
+)
 
-func newDefaultMySQL() *mySQL{
+func (m *mySQL) GetDB() (*sql.DB, error) {
+	//加载全局数据量单例
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if db == nil {
+		conn, err := m.getDBConn()
+		if err != nil {
+			return nil, err
+		}
+		db = conn
+	}
+	return db, nil
+}
+
+//创建连接池
+func (m *mySQL) getDBConn() (*sql.DB, error) {
+	var err error
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%S)/%s?charset=utf8&multiStatements=true", m.UserName, m.Password, m.Host, m.Port, m.Database)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("connect to mysql<%s> error,%s", dsn, err.Error())
+	}
+	db.SetMaxOpenConns(m.MaxOpenConn)
+	db.SetMaxIdleConns(m.MaxIdleConn)
+	db.SetConnMaxLifetime(time.Second * time.Duration(m.MaxLifeTime))
+	db.SetConnMaxIdleTime(time.Second * time.Duration(m.MaxIdleTime))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf("ping mysql<%s> error,%s", dsn, err.Error())
+	}
+	return db, nil
+
+}
+
+func newDefaultMySQL() *mySQL {
 	return &mySQL{
-		Database:"test",
-		Host:"127.0.0.1",
-		Port:"3306",
-		MaxOpenConn:200,
+		Database:    "go_couse",
+		Host:        "127.0.0.1",
+		Port:        "3306",
+		MaxOpenConn: 200,
 		MaxIdleConn: 50,
 		MaxLifeTime: 1800,
 		MaxIdleTime: 600,
