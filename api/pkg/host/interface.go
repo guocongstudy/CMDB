@@ -18,7 +18,7 @@ type Service interface {
 	//定义接口的查询分页的请求
 	QueryHost(context.Context, *QueryHostRequest) (*HostSet, error)
 	//查询详情(从前端来讲最直观的就是列表的详情页)
-	DescribeHost(context.Context, *DescribeHostRequest) (*HostSet, error)
+	DescribeHost(context.Context, *DescribeHostRequest) (*Host, error)
 	//支持删除(这里其实是有冗余的，可以共用一个id接口)
 	DeleteHost(context.Context, *DeleteHostRequest) (*Host, error)
 	//更新数据接口

@@ -190,7 +190,8 @@ func (s *service) UpdateHost(ctx context.Context, req *host.UpdateHostRequest) (
 	return ins, nil
 }
 
-func (s *service) DescribeHost(ctx context.Context, req *host.DescribeHostRequest) (*host.Host, error) {
+func (s *service) DescribeHost(ctx context.Context, req *host.DescribeHostRequest) (
+	*host.Host, error) {
 	query := sqlbuilder.NewQuery(queryHostSQL)
 	querySQL, args := query.Where("id = ?", req.Id).BuildQuery()
 	s.log.Debugf("sql: %s", querySQL)
@@ -220,7 +221,6 @@ func (s *service) DescribeHost(ctx context.Context, req *host.DescribeHostReques
 	}
 
 	return ins, nil
-
 }
 
 func (s *service) DeleteHost(ctx context.Context, req *host.DeleteHostRequest) (*host.Host, error) {
