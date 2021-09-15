@@ -30,12 +30,15 @@ type Host struct {
 	*Resource
 	*Describe
 }
+//put也是常见的更新方式
 func (h *Host) Put(req *UpdateHostData) {
+	//指针类型，直接将值赋值给他去实现替换
 	h.Resource = req.Resource
 	h.Describe = req.Describe
 	h.UpdateAt = ftime.Now().Timestamp() // time, 13 时间戳
 	h.GenHash()
 }
+
 
 func (h *Host) Patch(req *UpdateHostData) error {
 	err := ObjectPatch(h.Resource, req.Resource)

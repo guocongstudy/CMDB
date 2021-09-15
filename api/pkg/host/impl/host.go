@@ -4,6 +4,7 @@ import (
 	"CMDB/api/pkg/host"
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/infraboard/mcube/exception"
 	"github.com/infraboard/mcube/sqlbuilder"
 	"github.com/infraboard/mcube/types/ftime"
@@ -37,15 +38,14 @@ const (
 	deleteResourceSQL = `DELETE FROM resource WHERE id = ?;`
 )
 
-
 func (s *service) SaveHost(ctx context.Context, h *host.Host) (*host.Host, error) {
 	h.Id = xid.New().String()
-	h.ResourceId=h.Id
-	h.SyncAt=ftime.Now().Timestamp()
-	if err :=s.save(ctx,h);err !=nil{
-		return nil,err
+	h.ResourceId = h.Id
+	h.SyncAt = ftime.Now().Timestamp()
+	if err := s.save(ctx, h); err != nil {
+		return nil, err
 	}
-	return h,nil
+	return h, nil
 }
 
 func (s *service) QueryHost(ctx context.Context, req *host.QueryHostRequest) (*host.HostSet, error) {
@@ -55,7 +55,7 @@ func (s *service) QueryHost(ctx context.Context, req *host.QueryHostRequest) (*h
 		query.Where("r.name LIKE ?", "%"+req.Keywords+"%")
 	}
 
-	querySQL, args := query.Order("sync_at").Desc().Limit(req.OffSet(), uint(req.PageSize)).BuildQuery()
+	querySQL, args := query.Order("sync_at").Desc().Limit(req.Offset(), uint(req.PageSize)).BuildQuery()
 	s.log.Debugf("sql: %s", querySQL)
 
 	queryStmt, err := s.db.Prepare(querySQL)
@@ -103,7 +103,91 @@ func (s *service) QueryHost(ctx context.Context, req *host.QueryHostRequest) (*h
 
 	return set, nil
 
+}
+func (s *service) UpdateHost(ctx context.Context, req *host.UpdateHostRequest) (*host.Host, error) {
+	var (
+		stmt *sql.Stmt
+		err  error
+	)
+	//做一些参数的校验
+	if err := req.Validate(); err != nil {
+		return nil, exception.NewBadRequest("validate update host error,%s", err)
+	}
+	//同时开启事物
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("start tx error,%s", err)
+	}
+	//更新之前需要将条数据实例查出来
+	ins, err := s.DescribeHost(ctx, host.NewDescribeHostRequestWithID(req.Id))
+	if err != nil {
+		return nil, err
+	}
+	//判断resourceId
+	oldRH, oldDH := ins.ResourceHash, ins.DescribeHash
+	//更新请求，两种不同的数据请求，patch 和 put
+	switch req.UpdateMode {
+	case host.PATCH:
+		ins.Patch(req.UpdateHostData)
+		fmt.Println("new", ins.ResourceHash, ins.Name)
+	default:
+		ins.Put(req.UpdateHostData)
+	}
 
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}()
+
+	if oldRH != ins.ResourceHash {
+		//避免SQL注入，请使用Prepare
+		stmt, err = tx.Prepare(updateResourceSQL)
+		if err != nil {
+			return nil, err
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(
+			ins.ExpireAt, ins.Category, ins.Type, ins.Name, ins.Description,
+			ins.Status, ins.UpdateAt, ins.SyncAt, ins.SyncAccount,
+			ins.PublicIP, ins.PrivateIP, ins.PayType, ins.DescribeHash, ins.ResourceHash,
+			ins.ResourceId,
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		s.log.Debug("resource data hash not changed,needn't update")
+
+	}
+	if oldDH != ins.DescribeHash {
+		// 避免SQL注入, 请使用Prepare
+		stmt, err = tx.Prepare(updateHostSQL)
+		if err != nil {
+			return nil, err
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(
+			ins.CPU, ins.Memory, ins.GPUAmount, ins.GPUSpec, ins.OSType, ins.OSName,
+			ins.ImageID, ins.InternetMaxBandwidthOut,
+			ins.InternetMaxBandwidthIn, ins.KeyPairName, ins.SecurityGroups,
+			ins.Id,
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		s.log.Debug("describe data hash not changed, needn't update")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return ins, nil
 }
 
 func (s *service) DescribeHost(ctx context.Context, req *host.DescribeHostRequest) (*host.Host, error) {

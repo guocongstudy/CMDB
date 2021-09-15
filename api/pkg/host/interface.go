@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 )
-
+//全局生成一个validate的实例
 var (
 	validate = validator.New()
 )
@@ -35,7 +35,7 @@ func NewQueryHostRequestFromHTTP(r *http.Request) *QueryHostRequest {
 	pnUint64, _ := strconv.ParseUint(pn, 10, 64)
 
 	if psUint64 == 0 {
-		psUint64 = 20
+		psUint64 = 20 //pagesize 默认是20
 	}
 	if pnUint64 == 0 {
 		pnUint64 = 1
@@ -59,9 +59,6 @@ func (req *QueryHostRequest) Offset() int64 {
 	return int64(req.PageSize) *int64(req.PageNumber-1)  //从0开始
 }
 
-func (req *QueryHostRequest) OffSet() int64 {
-	return int64(req.PageSize) * int64(req.PageNumber-1)
-}
 
 
 func NewDescribeHostRequestWithID(id string) *DescribeHostRequest {
@@ -111,6 +108,7 @@ type UpdateHostRequest struct {
 }
 
 func (req *UpdateHostRequest) Validate() error {
+	//用validate校验结构体
 	return validate.Struct(req)
 }
 
