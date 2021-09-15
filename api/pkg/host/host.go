@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"github.com/infraboard/mcube/types/ftime"
 )
 
 const (
@@ -15,11 +16,53 @@ const (
 
 //用int做枚举
 type Vendor int
+func NewDefaultHost() *Host {
+	return &Host{
+		&Base{},
+		&Resource{},
+		&Describe{},
+	}
+}
+
 
 type Host struct {
 	*Base
 	*Resource
 	*Describe
+}
+func (h *Host) Put(req *UpdateHostData) {
+	h.Resource = req.Resource
+	h.Describe = req.Describe
+	h.UpdateAt = ftime.Now().Timestamp() // time, 13 时间戳
+	h.GenHash()
+}
+
+func (h *Host) Patch(req *UpdateHostData) error {
+	err := ObjectPatch(h.Resource, req.Resource)
+	if err != nil {
+		return err
+	}
+
+	err = ObjectPatch(h.Describe, req.Describe)
+	if err != nil {
+		return err
+	}
+
+	h.UpdateAt = ftime.Now().Timestamp()
+	h.GenHash()
+	return nil
+}
+
+// patch JSON {a: 1, b： 2}， {b:20}  ===> {a:1, b:20}
+func ObjectPatch(old, new interface{}) error {
+	// {b: 20}
+	newByte, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	// {a:1, b:2}
+	// {a:1, b: 20}
+	return json.Unmarshal(newByte, old)
 }
 
 func (h *Host) GenHash() error{
@@ -97,4 +140,8 @@ func NewHostSet()*HostSet{
 type HostSet struct {
 	Items []*Host `json:"items"`
 	Total int     `json:"total"`
+}
+
+func (s *HostSet) Add(item *Host) {
+	s.Items = append(s.Items, item)
 }

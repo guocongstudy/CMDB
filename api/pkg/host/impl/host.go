@@ -3,6 +3,7 @@ package impl
 import (
 	"CMDB/api/pkg/host"
 	"context"
+	"database/sql"
 	"github.com/infraboard/mcube/exception"
 	"github.com/infraboard/mcube/sqlbuilder"
 	"github.com/infraboard/mcube/types/ftime"
@@ -48,37 +49,106 @@ func (s *service) SaveHost(ctx context.Context, h *host.Host) (*host.Host, error
 }
 
 func (s *service) QueryHost(ctx context.Context, req *host.QueryHostRequest) (*host.HostSet, error) {
-	query :=sqlbuilder.NewQuery(queryHostSQL)
+	query := sqlbuilder.NewQuery(queryHostSQL)
 
-	querySQL,args :=query.Order("synv_at").Desc().Limit(req.Offset(),uint(req.PageSize)).BuildQuery()
-    s.log.Debugf("sql:%s",querySQL)
+	if req.Keywords != "" {
+		query.Where("r.name LIKE ?", "%"+req.Keywords+"%")
+	}
 
-	queryStmt,err :=s.db.Prepare(querySQL)
-	if err !=nil{
-		return nil, exception.NewInternalServerError("prepare query host error,%s",err.Error())
+	querySQL, args := query.Order("sync_at").Desc().Limit(req.OffSet(), uint(req.PageSize)).BuildQuery()
+	s.log.Debugf("sql: %s", querySQL)
+
+	queryStmt, err := s.db.Prepare(querySQL)
+	if err != nil {
+		return nil, exception.NewInternalServerError("prepare query host error, %s", err.Error())
 	}
 	defer queryStmt.Close()
 
-	rows,err :=queryStmt.Query(args...)
-	if err !=nil{
-		return nil,exception.NewInternalServerError(err.Error())
+	rows, err := queryStmt.Query(args...)
+	if err != nil {
+		return nil, exception.NewInternalServerError(err.Error())
 	}
 	defer rows.Close()
 
 	set := host.NewHostSet()
-	for rows.Next(){
-		ins :=host.NewDefaultHost()
-		err :=rows.Scan(
-
-			)
+	for rows.Next() {
+		ins := host.NewDefaultHost()
+		err := rows.Scan(
+			&ins.Id, &ins.Vendor, &ins.Region, &ins.Zone, &ins.CreateAt, &ins.ExpireAt,
+			&ins.Category, &ins.Type, &ins.InstanceId, &ins.Name, &ins.Description,
+			&ins.Status, &ins.UpdateAt, &ins.SyncAt, &ins.SyncAccount,
+			&ins.PublicIP, &ins.PrivateIP, &ins.PayType, &ins.DescribeHash, &ins.ResourceHash, &ins.ResourceId,
+			&ins.CPU, &ins.Memory, &ins.GPUAmount, &ins.GPUSpec, &ins.OSType, &ins.OSName,
+			&ins.SerialNumber, &ins.ImageID, &ins.InternetMaxBandwidthOut, &ins.InternetMaxBandwidthIn,
+			&ins.KeyPairName, &ins.SecurityGroups,
+		)
+		if err != nil {
+			return nil, exception.NewInternalServerError("query host error, %s", err.Error())
+		}
+		set.Add(ins)
 	}
 
+	// 获取total SELECT COUNT(*) FROMT t Where ....
+	countSQL, args := query.BuildCount()
+	countStmt, err := s.db.Prepare(countSQL)
+	if err != nil {
+		return nil, exception.NewInternalServerError(err.Error())
+	}
+
+	defer countStmt.Close()
+	err = countStmt.QueryRow(args...).Scan(&set.Total)
+	if err != nil {
+		return nil, exception.NewInternalServerError(err.Error())
+	}
+
+	return set, nil
+
+
 }
 
-func (s *service) DescribeHost(context.Context, *host.DescribeHostRequest) (*host.HostSet, error) {
-	return nil, nil
+func (s *service) DescribeHost(ctx context.Context, req *host.DescribeHostRequest) (*host.Host, error) {
+	query := sqlbuilder.NewQuery(queryHostSQL)
+	querySQL, args := query.Where("id = ?", req.Id).BuildQuery()
+	s.log.Debugf("sql: %s", querySQL)
+
+	queryStmt, err := s.db.Prepare(querySQL)
+	if err != nil {
+		return nil, exception.NewInternalServerError("prepare query host error, %s", err.Error())
+	}
+	defer queryStmt.Close()
+
+	ins := host.NewDefaultHost()
+	err = queryStmt.QueryRow(args...).Scan(
+		&ins.Id, &ins.Vendor, &ins.Region, &ins.Zone, &ins.CreateAt, &ins.ExpireAt,
+		&ins.Category, &ins.Type, &ins.InstanceId, &ins.Name, &ins.Description,
+		&ins.Status, &ins.UpdateAt, &ins.SyncAt, &ins.SyncAccount,
+		&ins.PublicIP, &ins.PrivateIP, &ins.PayType, &ins.DescribeHash, &ins.ResourceHash, &ins.ResourceId,
+		&ins.CPU, &ins.Memory, &ins.GPUAmount, &ins.GPUSpec, &ins.OSType, &ins.OSName,
+		&ins.SerialNumber, &ins.ImageID, &ins.InternetMaxBandwidthOut, &ins.InternetMaxBandwidthIn,
+		&ins.KeyPairName, &ins.SecurityGroups,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, exception.NewNotFound("%#v not found", req)
+		}
+		return nil, exception.NewInternalServerError("describe host error, %s", err.Error())
+	}
+
+	return ins, nil
+
 }
 
-func (s *service) DeleteHost(context.Context, *host.DeleteHostRequest) (*host.Host, error) {
-	return nil, nil
+func (s *service) DeleteHost(ctx context.Context, req *host.DeleteHostRequest) (*host.Host, error) {
+	ins, err := s.DescribeHost(ctx, host.NewDescribeHostRequestWithID(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.delete(ctx, req); err != nil {
+		return nil, err
+	}
+
+	return ins, nil
+
 }

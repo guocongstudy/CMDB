@@ -28,3 +28,4 @@ func (s *service) Config() error {
 	s.db = db
 	return nil
 }
+

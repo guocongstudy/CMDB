@@ -2,7 +2,15 @@ package host
 
 import (
 	"context"
+	"github.com/go-playground/validator/v10"
+	"net/http"
+	"strconv"
 )
+
+var (
+	validate = validator.New()
+)
+
 
 type Service interface {
 	//定义存储的接口
@@ -16,11 +24,34 @@ type Service interface {
 	//更新数据接口
 	UpdateHost(context.Context, *UpdateHostRequest) (*Host, error)
 }
+func NewQueryHostRequestFromHTTP(r *http.Request) *QueryHostRequest {
+	qs := r.URL.Query()
+
+	ps := qs.Get("page_size")
+	pn := qs.Get("page_number")
+	kw := qs.Get("keywords")
+
+	psUint64, _ := strconv.ParseUint(ps, 10, 64)
+	pnUint64, _ := strconv.ParseUint(pn, 10, 64)
+
+	if psUint64 == 0 {
+		psUint64 = 20
+	}
+	if pnUint64 == 0 {
+		pnUint64 = 1
+	}
+	return &QueryHostRequest{
+		PageSize:   psUint64,
+		PageNumber: pnUint64,
+		Keywords:   kw,
+	}
+}
 
 type QueryHostRequest struct {
 	//查询主机需要的参数
 	PageSize   uint64 `json:"page_size,omitempty"` //一页20条，omitempty 表示传入的值为空则不输出
 	PageNumber uint64 `json:"page_number,omitempty"`
+	Keywords   string `json:"keywords"`
 }
 
 //pageNumber 第一页 第二页。。。
@@ -28,11 +59,25 @@ func (req *QueryHostRequest) Offset() int64 {
 	return int64(req.PageSize) *int64(req.PageNumber-1)  //从0开始
 }
 
+func (req *QueryHostRequest) OffSet() int64 {
+	return int64(req.PageSize) * int64(req.PageNumber-1)
+}
+
+
+func NewDescribeHostRequestWithID(id string) *DescribeHostRequest {
+	return &DescribeHostRequest{
+		Id: id,
+	}
+}
 
 
 type DescribeHostRequest struct {
 	//利用主机Id
-	Id string `json:"id"`
+	Id string `json:"id" validate:"required"`
+}
+
+func NewDeleteHostRequestWithID(id string) *DeleteHostRequest {
+	return &DeleteHostRequest{Id: id}
 }
 
 type DeleteHostRequest struct {
@@ -46,6 +91,14 @@ const (
 	PATCH
 )
 
+func NewUpdateHostRequest(id string) *UpdateHostRequest {
+	return &UpdateHostRequest{
+		Id:             id,
+		UpdateMode:     PUT,
+		UpdateHostData: &UpdateHostData{},
+	}
+}
+
 type UpdateHostData struct {
 	*Resource
 	*Describe
@@ -54,7 +107,11 @@ type UpdateHostData struct {
 type UpdateHostRequest struct {
 	Id             string          `json:"id" validate:"required"` //参数校验，必传
 	UpdateMode     UpdateMode      `json:"update_mode"`
-	UpdateHostDate *UpdateHostData `json:"date" validate:"required"` //参数校验，必传
+	UpdateHostData *UpdateHostData `json:"date" validate:"required"` //参数校验，必传
 }
 
-//1：22：08y
+func (req *UpdateHostRequest) Validate() error {
+	return validate.Struct(req)
+}
+
+
