@@ -1,7 +1,7 @@
 package impl
 
 import (
-	"CMDB/api/pkg/host/conf"
+	conf2 "CMDB/api/conf"
 	"database/sql"
 	"github.com/infraboard/mcube/logger"
 	"github.com/infraboard/mcube/logger/zap"
@@ -15,12 +15,12 @@ var (
 type service struct {
 	db *sql.DB
 	log  logger.Logger
-	stmts map[string]sql.Stmt
+	//stmts map[string]sql.Stmt
 }
 
 //service 初始化
 func (s *service) Config() error {
-	db, err := conf.C().MySQL.GetDB()
+	db, err := conf2.C().MySQL.GetDB()
 	if err != nil {
 		return err
 	}

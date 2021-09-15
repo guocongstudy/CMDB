@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"sync"
 	"time"
 )
@@ -27,6 +28,10 @@ type app struct {
 	Name string `toml:"name" env:"App_NAME"`
 	Host string `toml:"host" env:"APP_HOST"`
 	Port string `toml:"port" env:"APP_PORT"`
+}
+func (a *app) Addr() string {
+	//返回一个监听的地址
+	return fmt.Sprintf("%s:%s", a.Host, a.Port)
 }
 
 func newDefaultAPP() *app {

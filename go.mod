@@ -9,4 +9,5 @@ require (
 	github.com/infraboard/mcube v1.4.5
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/rs/xid v1.3.0
+	github.com/spf13/cobra v1.2.1
 )
