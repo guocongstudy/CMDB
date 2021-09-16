@@ -20,7 +20,7 @@ type service struct {
 
 //service 初始化
 func (s *service) Config() error {
-	db, err := conf2.C().MySQL.GetDB()
+	db, err := conf2.C().Mysql.GetDB()
 	if err != nil {
 		return err
 	}

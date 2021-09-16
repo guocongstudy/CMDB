@@ -2,8 +2,12 @@ package main
 
 import "CMDB/api/cmd"
 
-//Javascript对象与函数 01：28：15
+
 
 func main(){
 cmd.Execute()
 }
+
+// go run main.go -f etc/demo-api.toml start
+//Javascript对象与函数 02：44：12
+//etc/cmdb.toml
