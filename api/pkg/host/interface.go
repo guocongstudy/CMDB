@@ -26,7 +26,7 @@ type Service interface {
 }
 func NewQueryHostRequestFromHTTP(r *http.Request) *QueryHostRequest {
 	qs := r.URL.Query()
-
+	//前端的参数
 	ps := qs.Get("page_size")
 	pn := qs.Get("page_number")
 	kw := qs.Get("keywords")

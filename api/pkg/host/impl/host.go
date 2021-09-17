@@ -50,7 +50,7 @@ func (s *service) SaveHost(ctx context.Context, h *host.Host) (*host.Host, error
 
 func (s *service) QueryHost(ctx context.Context, req *host.QueryHostRequest) (*host.HostSet, error) {
 	query := sqlbuilder.NewQuery(queryHostSQL)
-
+	//这里就是模糊查询的方法，前后都加“%”
 	if req.Keywords != "" {
 		query.Where("r.name LIKE ?", "%"+req.Keywords+"%")
 	}
