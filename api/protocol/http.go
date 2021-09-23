@@ -11,12 +11,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"time"
+
 )
 
 // NewHTTPService 构建函数
 func NewHTTPService() *HTTPService {
 	r := httprouter.New()
-
+	cors.Default().Handler(r)
 	server := &http.Server{
 		ReadHeaderTimeout: 60 * time.Second,
 		ReadTimeout:       60 * time.Second,

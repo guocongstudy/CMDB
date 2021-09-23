@@ -51,7 +51,7 @@ type QueryHostRequest struct {
 	//查询主机需要的参数
 	PageSize   uint64 `json:"page_size,omitempty"` //一页20条，omitempty 表示传入的值为空则不输出
 	PageNumber uint64 `json:"page_number,omitempty"`
-	Keywords   string `json:"keywords"`
+	Keywords   string `json:"keywords"` //模糊查询
 }
 
 //pageNumber 第一页 第二页。。。
